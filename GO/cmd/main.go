@@ -16,7 +16,6 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	fmt.Println("You are using Filmage", constants.Version)
-
 	for {
 		if scanner.Scan() {
 			cmd := scanner.Text()
@@ -39,6 +38,11 @@ func main() {
 					rect := image.Rect(0, 0, width, height)
 					randomImage := grid.CreateRandomImage(rect)
 					ioFile.Save("random.png", randomImage)
+
+				case cmd_parts[0] == "filter":
+					image := ioFile.Load("anhnguoi.png")
+					filter := grid.Average9(image)
+					ioFile.Save("anhloc.png", filter)
 				}
 			}
 
@@ -49,4 +53,5 @@ func main() {
 		}
 	}
 	fmt.Println("See you again")
+
 }
