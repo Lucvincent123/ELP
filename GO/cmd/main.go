@@ -46,7 +46,7 @@ func main() {
 				}
 			case cmd_parts[0] == "filter":
 				image := ioFile.Load("anhanime.png")
-				filter := grid.Average9(image)
+				filter := grid.Average225(image)
 				ioFile.Save("anhloc1.png", filter)
 			default:
 				fmt.Println("Invalid command")
