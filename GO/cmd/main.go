@@ -4,54 +4,59 @@ import (
 	"GO/internal/constants"
 	"GO/internal/grid"
 	"GO/internal/ioFile"
+	"GO/internal/log"
+	"GO/internal/routines"
 	"bufio"
 	"fmt"
-	"image"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
-
-	fmt.Println("You are using Filmage", constants.Version)
+	scanner := bufio.NewScanner(os.Stdin) // Using for reading user command
+	var wg sync.WaitGroup
+	fmt.Println("You are using Filmage", constants.Version) // Log version
 	for {
-		if scanner.Scan() {
-			cmd := scanner.Text()
+		fmt.Print("->")
+		if scanner.Scan() { // When user enters a command
+			cmd := scanner.Text() // Read command string
 			if cmd == "exit" {
 				break
 			}
-			cmd_parts := strings.Fields(cmd)
+			cmd_parts := strings.Fields(cmd) // Divide command into parts
 			switch {
 			case cmd_parts[0] == "create":
 				switch {
-				case cmd_parts[1] == "random":
-					width, err := strconv.Atoi(cmd_parts[2])
+				case cmd_parts[1] == "random": // create random 400 100 random.png
+					width, err := strconv.Atoi(cmd_parts[2]) // String to int
 					if err != nil {
 						fmt.Println("Invalid width")
 					}
-					height, err := strconv.Atoi(cmd_parts[3])
+					height, err := strconv.Atoi(cmd_parts[3]) // String to int
 					if err != nil {
 						fmt.Println("Invalid height")
 					}
-					rect := image.Rect(0, 0, width, height)
-					randomImage := grid.CreateRandomImage(rect)
-					ioFile.Save("random.png", randomImage)
-
-				case cmd_parts[0] == "filter":
-					image := ioFile.Load("anhnguoi.png")
-					filter := grid.Average9(image)
-					ioFile.Save("anhloc.png", filter)
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						routines.CreateRandomRoutine(width, height, cmd_parts[4])
+					}()
 				}
+			case cmd_parts[0] == "filter":
+				image := ioFile.Load("anhanime.png")
+				filter := grid.Average9(image)
+				ioFile.Save("anhloc1.png", filter)
+			default:
+				fmt.Println("Invalid command")
 			}
 
 		}
 
-		if err := scanner.Err(); err != nil {
-			fmt.Println("Erreur :", err)
-		}
+		log.ErrorCheck(scanner.Err()) // Check scanner error
 	}
+	wg.Wait()
 	fmt.Println("See you again")
 
 }

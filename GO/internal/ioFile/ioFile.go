@@ -48,4 +48,5 @@ func Save(filePath string, grid [][]color.Color) {
 	defer imgFile.Close()
 
 	png.Encode(imgFile, img.SubImage(img.Rect))
+	fmt.Println("\nImage saved")
 }
