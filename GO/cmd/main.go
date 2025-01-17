@@ -45,8 +45,12 @@ func main() {
 					}()
 				}
 			case cmd_parts[0] == "filter":
+				niveau, err := strconv.Atoi(cmd_parts[1])
+				if err != nil {
+					fmt.Println("Error:", err)
+				}
 				image := ioFile.Load("anhanime.png")
-				filter := grid.Average225(image)
+				filter := grid.Average(image, niveau)
 				ioFile.Save("anhloc1.png", filter)
 			default:
 				fmt.Println("Invalid command")
