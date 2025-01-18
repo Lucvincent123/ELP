@@ -4,10 +4,11 @@ import (
 	"GO/internal/constants"
 	"GO/internal/grid"
 	"GO/internal/ioFile"
-	"GO/internal/log"
 	"GO/internal/routines"
+	"GO/internal/tcp"
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -52,13 +53,21 @@ func main() {
 				image := ioFile.Load("anhanime.png")
 				filter := grid.Average(image, niveau)
 				ioFile.Save("anhloc1.png", filter)
+			case cmd_parts[0] == "server":
+				server := tcp.NewServer(cmd_parts[1])
+				log.Fatal(server.Start())
+			case cmd_parts[0] == "client":
+				client := tcp.NewClient()
+				log.Fatal(client.Connect(cmd_parts[1]))
 			default:
 				fmt.Println("Invalid command")
 			}
 
 		}
-
-		log.ErrorCheck(scanner.Err()) // Check scanner error
+		err := scanner.Err()
+		if err != nil {
+			fmt.Println("Scanner error:", err)
+		} // Check scanner error
 	}
 	wg.Wait()
 	fmt.Println("See you again")
