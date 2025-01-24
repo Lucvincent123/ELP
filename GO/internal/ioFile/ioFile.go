@@ -8,45 +8,66 @@ import (
 	"os"
 )
 
-func Load(filePath string) (grid [][]color.Color) {
+func open(filePath string) *image.NRGBA {
+	// Open file
 	imgFile, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println("Cannot open file:", err)
 	}
 	defer imgFile.Close()
-
+	// Decode file to *image.NRGBA
 	img, _, err := image.Decode(imgFile)
 	if err != nil {
 		fmt.Println("Cannot decode file:", err)
 	}
+	return img.(*image.NRGBA)
+}
 
-	size := img.Bounds().Size()
-	for i := 0; i < size.X; i++ {
-		var y []color.Color
-		for j := 0; j < size.Y; j++ {
-			y = append(y, img.At(i, j))
-		}
-		grid = append(grid, y)
+func Load(filePath string) (grid [][]color.Color) {
+	// Open file to get pointer *image.NRGBA
+	img := open(filePath)
+	if img == nil {
+		return nil
 	}
+	// Change to [][]color.Color
+	grid = ImgToGrid(img)
+	return
+}
+
+func LoadByte(filePath string) (width int, pix []byte) {
+	// Open file to get pointer *image.NRGBA
+	img := open(filePath)
+	if img == nil {
+		return
+	}
+	// Get width and pix
+	width = img.Stride / 4
+	pix = img.Pix
 	return
 }
 
 func Save(filePath string, grid [][]color.Color) {
-	xlen, ylen := len(grid), len(grid[0])
-	rect := image.Rect(0, 0, xlen, ylen)
-	img := image.NewNRGBA(rect)
-	for x := 0; x < xlen; x++ {
-		for y := 0; y < ylen; y++ {
-			img.Set(x, y, grid[x][y])
-		}
+	// create file path
+	imgFile, err := os.Create(filePath)
+	if err != nil {
+		fmt.Println("Cannot create file:", err)
+		return
 	}
+	//Change to *image.NRGBA
+	img := GridToImg(grid)
+	//Save image
+	png.Encode(imgFile, img.SubImage(img.Rect))
+	imgFile.Close()
+	fmt.Printf("\nImage %v saved\n", imgFile.Name())
+}
 
+func SaveByte(filePath string, img *image.NRGBA) {
 	imgFile, err := os.Create(filePath)
 	if err != nil {
 		fmt.Println("Cannot create file:", err)
 	}
-	defer imgFile.Close()
 
 	png.Encode(imgFile, img.SubImage(img.Rect))
-	fmt.Println("\nImage saved")
+	imgFile.Close()
+	fmt.Printf("\nImage %v saved\n", imgFile.Name())
 }
