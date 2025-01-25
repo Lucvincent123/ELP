@@ -13,13 +13,13 @@ import (
 type Client struct {
 	serAddress string
 	conn       *net.TCPConn
-	channel    chan struct{}
+	quit       chan struct{}
 }
 
 func NewClient(server string) *Client {
 	return &Client{
 		serAddress: server,
-		channel:    make(chan struct{}),
+		quit:       make(chan struct{}),
 	}
 }
 
@@ -37,11 +37,14 @@ func (c *Client) Connect() {
 	}
 	// defer c.conn.Close()
 	c.conn = conn
+	wg.Add(1)
 	go c.readLoop()
 	c.writeLoop()
+	wg.Wait()
 }
 
 func (c *Client) readLoop() {
+	defer wg.Done()
 	defer c.conn.Close()
 	buffer := make([]byte, 10000000000)
 	for {
@@ -61,16 +64,6 @@ func (c *Client) readLoop() {
 					Rect:   rect,
 				}
 				ioFile.SaveByte("filtered.png", img)
-				// var img [][]color.Color
-				// img_buffer := buffer[4:n]
-				// for i := 0; i < width; i++ {
-				// 	var y []color.Color
-				// 	for j := 0; j < height; j++ {
-				// 		y = append(y, color.NRGBA{img_buffer[i*4+j*width*4], img_buffer[i*4+j*width*4+1], img_buffer[i*4+j*width*4+2], img_buffer[i*4+j*width*4+3]})
-				// 	}
-				// 	img = append(img, y)
-				// }
-				// ioFile.Save("filtered.png", img)
 			}
 			continue
 		}
@@ -78,7 +71,7 @@ func (c *Client) readLoop() {
 
 		// fmt.Println("Message:", msg)
 		if msg == "close" {
-			c.channel <- struct{}{}
+			close(c.quit)
 			break
 		}
 	}
@@ -90,16 +83,18 @@ func (c *Client) writeLoop() {
 	for {
 		fmt.Printf("(client->%v)->", c.serAddress)
 		select {
-		case <-c.channel:
-			fmt.Println("Server is closed")
-			close(c.channel)
+		case <-c.quit:
 			return
 		default:
 			if scanner.Scan() { // When user enters a command
 				message := scanner.Text() // Read command string
 				if message == "exit" {
-					go c.forceWrite("close")
-					break
+					c.conn.Write([]byte("close"))
+					return
+				}
+				if message == "shutdown" {
+					c.conn.Write([]byte("shutdown"))
+					return
 				}
 				message_parts := strings.Fields(message)
 				if len(message_parts) == 0 {
@@ -116,23 +111,13 @@ func (c *Client) writeLoop() {
 					data = append(data, pix...)
 					c.conn.Write(data)
 				default:
-					fmt.Println("Invalid command")
+					_, err := c.conn.Write([]byte(message))
+					if err != nil {
+						fmt.Println("Cannot send message:", err)
+					}
 				}
-				_, err := c.conn.Write([]byte(message))
-				if err != nil {
-					fmt.Println("Cannot send message:", err)
-				}
-			}
-		}
-	}
-}
 
-func (c *Client) forceWrite(cmd string) {
-	var err error
-	for {
-		_, err = c.conn.Write([]byte(cmd))
-		if err == nil {
-			break
+			}
 		}
 	}
 }

@@ -28,6 +28,13 @@ func Average(before [][]color.Color, level int) (after [][]color.Color) {
 	return
 }
 
+func AverageGo(before [][]color.Color, level int) (after [][]color.Color) {
+	before = reflectPadding(before, level)
+	var filter [][]float64 = createBlurKernel(level)
+	after = convolutionGo(before, filter)
+	return
+}
+
 func Sharpener(before [][]color.Color) (after [][]color.Color) {
 	before = reflectPadding(before, 1)
 	var filter [][]float64 = createSharpenKernel()
@@ -36,36 +43,84 @@ func Sharpener(before [][]color.Color) (after [][]color.Color) {
 }
 
 func convolution(before [][]color.Color, filter [][]float64) (after [][]color.Color) {
-	var level int = len(filter)
-	for i := (level - 1) / 2; i < len(before)-(level-1)/2; i++ {
+	var widthFilter int = len(filter)
+	var heigthFilter int = len(filter[0])
+	var widthBefore int = len(before)
+	var heigthBefore int = len(before[0])
+	var widthAfter int = widthBefore - widthFilter + 1
+	var heigthAfter int = heigthBefore - heigthFilter + 1
+	for i := 0; i < widthAfter; i++ {
 		var y []color.Color
-		for j := (level - 1) / 2; j < len(before[0])-(level-1)/2; j++ {
+		for j := 0; j < heigthAfter; j++ {
 			var r float64 = 0
 			var g float64 = 0
 			var b float64 = 0
 			var a float64 = 0
-			for k := -(level - 1) / 2; k < level/2; k++ {
-				for f := -(len(filter[0]) - 1) / 2; f < len(filter[0])/2; f++ {
-					var r1, g1, b1, a1 uint32 = before[i+k][j+f].RGBA()
+			for k := 0; k < widthFilter; k++ {
+				for l := 0; l < heigthFilter; l++ {
+					var r1, g1, b1, a1 uint32 = before[i+k][j+l].RGBA()
 					var rf float64 = float64(r1)
 					var gf float64 = float64(g1)
 					var bf float64 = float64(b1)
 					var af float64 = float64(a1)
-					coefficent := filter[k+(len(filter)-1)/2][f+(len(filter[0])-1)/2]
-					r = r + rf*(coefficent)
-					g = g + gf*(coefficent)
-					b = b + bf*(coefficent)
-					a = a + af*(coefficent)
+					coefficent := filter[k][l]
+					r = r + rf*(coefficent)/257
+					g = g + gf*(coefficent)/257
+					b = b + bf*(coefficent)/257
+					a = a + af*(coefficent)/257
 				}
 			}
-			var r_moyen uint8 = uint8(r / 257)
-			var g_moyen uint8 = uint8(g / 257)
-			var b_moyen uint8 = uint8(b / 257)
-			var a_moyen uint8 = uint8(a / 257)
-			pix := color.NRGBA{r_moyen, g_moyen, b_moyen, a_moyen}
-			y = append(y, pix)
+			var ri uint8 = uint8(r)
+			var gi uint8 = uint8(g)
+			var bi uint8 = uint8(b)
+			var ai uint8 = uint8(a)
+			y = append(y, color.NRGBA{ri, gi, bi, ai})
 		}
 		after = append(after, y)
+	}
+	return
+}
+
+func convolutionGo(before [][]color.Color, filter [][]float64) (after [][]color.Color) {
+	var widthFilter int = len(filter)
+	var heigthFilter int = len(filter[0])
+	var widthBefore int = len(before)
+	var heigthBefore int = len(before[0])
+	var widthAfter int = widthBefore - widthFilter + 1
+	var heigthAfter int = heigthBefore - heigthFilter + 1
+	after = make([][]color.Color, widthAfter)
+	for i := 0; i < widthAfter; i++ {
+		after[i] = make([]color.Color, heigthAfter)
+	}
+
+	for i := 0; i < widthAfter; i++ {
+		for j := 0; j < heigthAfter; j++ {
+			go func() {
+				var r float64 = 0
+				var g float64 = 0
+				var b float64 = 0
+				var a float64 = 0
+				for k := 0; k < widthFilter; k++ {
+					for l := 0; l < heigthFilter; l++ {
+						var r1, g1, b1, a1 uint32 = before[i+k][j+l].RGBA()
+						var rf float64 = float64(r1)
+						var gf float64 = float64(g1)
+						var bf float64 = float64(b1)
+						var af float64 = float64(a1)
+						coefficent := filter[k][l]
+						r = r + rf*(coefficent)
+						g = g + gf*(coefficent)
+						b = b + bf*(coefficent)
+						a = a + af*(coefficent)
+					}
+				}
+				var ri uint8 = uint8(r / 257)
+				var gi uint8 = uint8(g / 257)
+				var bi uint8 = uint8(b / 257)
+				var ai uint8 = uint8(a / 257)
+				after[i][j] = color.NRGBA{ri, gi, bi, ai}
+			}()
+		}
 	}
 	return
 }
@@ -119,7 +174,7 @@ func createBlurKernel(size int) [][]float64 {
 func createSharpenKernel() [][]float64 {
 	return [][]float64{
 		{0, -1, 0},
-		{-1, 3, -1},
+		{-1, 5, -1},
 		{0, -1, 0},
 	}
 }

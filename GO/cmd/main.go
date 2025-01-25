@@ -73,7 +73,32 @@ func main() {
 						mutex.Lock()
 						image := ioFile.Load(cmd_parts[3])
 						mutex.Unlock()
+						start := time.Now()
 						new_img := grid.Average(image, level*2+1)
+						chrono := time.Since(start)
+						fmt.Println("\nDuration", chrono.Milliseconds())
+						time.Sleep(time.Duration(random.IntN(10)) * time.Second)
+						mutex.Lock()
+						ioFile.Save(cmd_parts[4], new_img)
+						mutex.Unlock()
+						fmt.Print("->")
+					}()
+				case "averageGo": // filter averageGo 9 source.png destination.png
+					level, err := strconv.Atoi(cmd_parts[2]) // Get user's level of average
+					if err != nil {
+						fmt.Println("Error:", err)
+						continue
+					}
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						mutex.Lock()
+						image := ioFile.Load(cmd_parts[3])
+						mutex.Unlock()
+						start := time.Now()
+						new_img := grid.AverageGo(image, level*2+1)
+						chrono := time.Since(start)
+						fmt.Println("\nDuration", chrono.Milliseconds())
 						time.Sleep(time.Duration(random.IntN(10)) * time.Second)
 						mutex.Lock()
 						ioFile.Save(cmd_parts[4], new_img)
@@ -97,12 +122,10 @@ func main() {
 				default:
 					fmt.Println("Invalid filter command")
 				}
-			case "server":
+			case "server": // server :3000
 				server := tcp.NewServer(cmd_parts[1])
 				server.Start()
-				fmt.Println("Back to main menu")
-				fmt.Print("->")
-			case "client":
+			case "client": // client :3000
 				client := tcp.NewClient(cmd_parts[1])
 				client.Connect()
 			default:
