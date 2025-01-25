@@ -37,21 +37,20 @@ func (c *Client) Connect() {
 	}
 	// defer c.conn.Close()
 	c.conn = conn
-	wg.Add(1)
 	go c.readLoop()
-	c.writeLoop()
+	go c.writeLoop()
 	wg.Wait()
+	<-c.quit
 }
 
 func (c *Client) readLoop() {
-	defer wg.Done()
 	defer c.conn.Close()
-	buffer := make([]byte, 10000000000)
+	buffer := make([]byte, 100000000)
 	for {
 		n, err := c.conn.Read(buffer)
 		if err != nil {
 			fmt.Println("Cannot read:", err)
-			continue
+			break
 		}
 		if buffer[0] == byte(1) {
 			if buffer[1] == byte(0) {
@@ -65,20 +64,19 @@ func (c *Client) readLoop() {
 				}
 				ioFile.SaveByte("filtered.png", img)
 			}
-			continue
-		}
-		msg := string(buffer[:n])
+		} else {
+			msg := string(buffer[:n])
 
-		// fmt.Println("Message:", msg)
-		if msg == "close" {
-			close(c.quit)
-			break
+			// fmt.Println("Message:", msg)
+			if msg == "close" {
+				close(c.quit)
+				break
+			}
 		}
 	}
 }
 
 func (c *Client) writeLoop() {
-	// defer c.conn.Close()
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Printf("(client->%v)->", c.serAddress)
@@ -110,6 +108,7 @@ func (c *Client) writeLoop() {
 					data = append(data, byte(width%255))
 					data = append(data, pix...)
 					c.conn.Write(data)
+					fmt.Println("sending")
 				default:
 					_, err := c.conn.Write([]byte(message))
 					if err != nil {

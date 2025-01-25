@@ -4,19 +4,18 @@ import (
 	"GO/internal/grid"
 	"GO/internal/ioFile"
 	"fmt"
-	"io"
 	"net"
 	"sync"
 	"time"
 )
 
 var wg sync.WaitGroup
-var mutex sync.Mutex
 
 type Server struct {
 	listenAddress string
 	listener      net.Listener
 	quit          chan struct{}
+	conns         []*net.Conn
 }
 
 func NewServer(listenAddress string) *Server {
@@ -34,38 +33,31 @@ func (s *Server) Start() {
 	}
 	s.listener = listener
 	fmt.Println("Listening at", s.listener.Addr().String())
-	wg.Add(1)
 	go s.acceptLoop()
 	wg.Wait()
+	<-s.quit
 }
 
 func (s *Server) acceptLoop() {
-	defer wg.Done()
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			select {
-			case <-s.quit:
-				return
-			default:
-				fmt.Println("Cannot accept connection:", err)
-				continue
-			}
+			fmt.Println("Cannot connect", err)
+			continue
 		}
+		s.conns = append(s.conns, &conn)
 		fmt.Println("\nnew connection", conn.RemoteAddr())
-		wg.Add(1)
 		go s.readLoop(conn)
 	}
 }
 
 func (s *Server) readLoop(conn net.Conn) {
-	defer wg.Done()
 	defer fmt.Println(conn.RemoteAddr(), "is closed")
 	defer conn.Close()
-	buffer := make([]byte, 10000000000)
+	buffer := make([]byte, 100000000)
 	for {
 		n, err := conn.Read(buffer)
-		if err != nil && err != io.EOF {
+		if err != nil {
 			fmt.Println("Cannot read", err)
 			return
 		}
@@ -73,14 +65,13 @@ func (s *Server) readLoop(conn net.Conn) {
 			if buffer[1] == byte(0) {
 				wg.Add(1)
 				go func() {
+					fmt.Println("recieved")
 					defer wg.Done()
 					var width int = int(buffer[2])*255 + int(buffer[3])
 					imgGrid := ioFile.BytesToGrid(buffer[4:n], width)
 
 					imgFiltered := grid.Average(imgGrid, 5)
-					mutex.Lock()
 					ioFile.Save("server.png", imgFiltered)
-					mutex.Unlock()
 					pix, newWidth := ioFile.GridToBytes(imgFiltered)
 					var data []byte
 					data = append(data, byte(1))
@@ -92,21 +83,23 @@ func (s *Server) readLoop(conn net.Conn) {
 					conn.Write(data)
 				}()
 			}
-			continue
+		} else {
+			msg := string(buffer[:n])
+			if msg == "close" {
+				fmt.Println("Closing", conn.RemoteAddr())
+				conn.Write([]byte("close"))
+				// close(s.quit)
+				return
+			}
+			if msg == "shutdown" {
+				for _, conn := range s.conns {
+					fmt.Println("Closing", (*conn).RemoteAddr())
+					(*conn).Write([]byte("close"))
+				}
+				close(s.quit)
+				return
+			}
+			fmt.Printf("[%v]: %v\n", conn.RemoteAddr(), msg)
 		}
-		msg := string(buffer[:n])
-		if msg == "close" {
-			fmt.Println("Closing", conn.RemoteAddr())
-			conn.Write([]byte("close"))
-			return
-		}
-		if msg == "shutdown" {
-			fmt.Println("Closing", conn.RemoteAddr())
-			conn.Write([]byte("close"))
-			s.listener.Close()
-			close(s.quit)
-			return
-		}
-		fmt.Printf("[%v]: %v\n", conn.RemoteAddr(), msg)
 	}
 }
