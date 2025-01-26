@@ -79,7 +79,7 @@ func (c *Client) readLoop() {
 func (c *Client) writeLoop() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Printf("(client->%v)->", c.serAddress)
+		fmt.Printf("(%v)->", c.conn.LocalAddr())
 		select {
 		case <-c.quit:
 			return
@@ -87,7 +87,7 @@ func (c *Client) writeLoop() {
 			if scanner.Scan() { // When user enters a command
 				message := scanner.Text() // Read command string
 				if message == "exit" {
-					c.conn.Write([]byte("close"))
+					c.conn.Write([]byte("exit"))
 					return
 				}
 				if message == "shutdown" {
