@@ -32,6 +32,7 @@ func (s *Server) Start() {
 		return
 	}
 	s.listener = listener
+	defer s.listener.Close()
 	fmt.Println("Listening at", s.listener.Addr().String())
 	go s.acceptLoop()
 	wg.Wait()
@@ -42,8 +43,13 @@ func (s *Server) acceptLoop() {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			fmt.Println("Cannot connect", err)
-			continue
+			select {
+			case <-s.quit:
+				return
+			default:
+				fmt.Println("Cannot connect", err)
+				continue
+			}
 		}
 		s.conns = append(s.conns, &conn)
 		fmt.Println("\nnew connection", conn.RemoteAddr())
@@ -58,8 +64,13 @@ func (s *Server) readLoop(conn net.Conn) {
 	for {
 		n, err := conn.Read(buffer)
 		if err != nil {
-			fmt.Println("Cannot read", err)
-			return
+			select {
+			case <-s.quit:
+				return
+			default:
+				fmt.Println("Cannot read", err)
+				continue
+			}
 		}
 		if buffer[0] == byte(1) {
 			if buffer[1] == byte(0) {
@@ -70,7 +81,7 @@ func (s *Server) readLoop(conn net.Conn) {
 					var width int = int(buffer[2])*255 + int(buffer[3])
 					imgGrid := ioFile.BytesToGrid(buffer[4:n], width)
 
-					imgFiltered := grid.Average(imgGrid, 5)
+					imgFiltered := grid.Average(imgGrid, 7)
 					ioFile.Save("server.png", imgFiltered)
 					pix, newWidth := ioFile.GridToBytes(imgFiltered)
 					var data []byte
@@ -85,7 +96,7 @@ func (s *Server) readLoop(conn net.Conn) {
 			}
 		} else {
 			msg := string(buffer[:n])
-			if msg == "close" {
+			if msg == "exit" {
 				fmt.Println("Closing", conn.RemoteAddr())
 				conn.Write([]byte("close"))
 				// close(s.quit)
