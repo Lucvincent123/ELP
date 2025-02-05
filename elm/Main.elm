@@ -77,5 +77,5 @@ view model =
     , div [ Html.Attributes.style "margin-top" "20px", Html.Attributes.style "text-align" "center" ]  
         [ button [ onClick Submit ] [ Html.text "Draw" ] ]
     , div [ Html.Attributes.style "margin-top" "20px", Html.Attributes.style "text-align" "center" ]  
-        [ Display.display model ]
+        [ Display.display model ]  ---- Run the DISPLAY function
     ]
