@@ -15,9 +15,10 @@ display model =
     div []
         [ svg [ Svg.Attributes.width "400", Svg.Attributes.height "400", viewBox "0 0 400 400" ]
             [ polyline [ points (formatPoints path), fill "none", stroke model.color, strokeWidth (String.fromInt model.largeur) ] [] 
-    , rect [ x "0", y "0", width "400", height "400", fill "none", stroke "green", strokeWidth "5" ] []  -- Thêm viền xung quanh
+    , rect [ x "0", y "0", width "400", height "400", fill "none", stroke "green", strokeWidth "5" ] []  -- Add rectangle in border
             ]  --- read function formatPoints 
         ]
+
 
     
 type alias Turtle =        ---- Define a turtle with position x, y and angle
