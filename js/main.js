@@ -1,6 +1,3 @@
-require("dotenv").config()
-
-// const net = require("net")
 const fs = require("fs")
 const readline = require("readline-sync")
 
@@ -10,22 +7,25 @@ const Word = require("./classes/Word")
 const Game = require("./classes/Game")
 const Player = require("./classes/Player")
 
-const game = new Game(process.env.NUMBER_OF_PLAYERS)
+const constants = require("./constant")
+
+
+const game = new Game(constants.NUMBER_OF_PLAYERS)
 const pile = new Pile()
 
 
 
 // read file and return an array of Word objects
-const wordList = fs.readFileSync(process.env.DATA_PATH, "utf-8").split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
+const wordList = fs.readFileSync(constants.DATA_PATH, "utf-8").split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
 // Take every n words to form a card
-for (let i = 0; i < wordList.length / process.env.NUMBER_OF_WORDS_PER_CARD; i++) {
-    const new_card = new Card(process.env.NUMBER_OF_WORDS_PER_CARD) // create a new card
+for (let i = 0; i < wordList.length / constants.NUMBER_OF_WORDS_PER_CARD; i++) {
+    const new_card = new Card(constants.NUMBER_OF_WORDS_PER_CARD) // create a new card
     new_card.updateCard(wordList.slice(i * 5, i * 5 + 5)) // Add words to card
     pile.addCard(new_card) // Add card to main pile
 }
 // Pick a playing Pile
 const playingPile = new Pile()
-playingPile.updateCards(pile.randomPick(process.env.NUMBER_OF_CARDS_PER_GAME))
+playingPile.updateCards(pile.randomPick(constants.NUMBER_OF_CARDS_PER_GAME))
 
 game.addPile(playingPile) // Add the playing pile to our game
 
@@ -79,7 +79,7 @@ while (! game.isNoMoreCardsLeft()) {
 
 game.showStatus()
 game.log("JUST ONE")
-fs.writeFile(process.env.RECORD_PATH, game.getRecord(), () => {
+fs.writeFile(constants.RECORD_PATH, game.getRecord(), () => {
     console.log("Record save")
 })
 

@@ -1,0 +1,11 @@
+const HOST = "127.0.0.1"
+const PORT = 3000
+
+const DATA_PATH = "./src/cards.txt"
+const RECORD_PATH = "./src/record.txt"
+
+const NUMBER_OF_WORDS_PER_CARD = 5
+const NUMBER_OF_CARDS_PER_GAME = 3
+const NUMBER_OF_PLAYERS = 2
+
+module.exports = { HOST, PORT, DATA_PATH, RECORD_PATH, NUMBER_OF_CARDS_PER_GAME, NUMBER_OF_PLAYERS, NUMBER_OF_WORDS_PER_CARD }

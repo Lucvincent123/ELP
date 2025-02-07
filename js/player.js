@@ -1,10 +1,10 @@
-require("dotenv").config()
-
 const net = require("net")
 
 const readline = require("readline-sync")
 
 const Player = require("./classes/Player")
+
+const constants = require("./constant")
 
 
 
@@ -12,7 +12,7 @@ const newPlayer = new Player()
 
 newPlayer.setName(readline.question("Please enter your name: ").trim())
 const tcpClient = new net.Socket()
-tcpClient.connect(process.env.PORT, process.env.HOST, () => {
+tcpClient.connect(constants.PORT, constants.HOST, () => {
     console.log("You entered the game")
 })
 
@@ -48,7 +48,7 @@ tcpClient.on("data", (data) => {
             console.log(`Points : ${cmd[1]}`)
             console.log(`Cards left : ${cmd[2]}`)
             console.log("Card picked")
-            let number = readline.question(`Please pick a number from 1 to ${process.env.NUMBER_OF_WORDS_PER_CARD}: `)
+            let number = readline.question(`Please pick a number from 1 to ${constants.NUMBER_OF_WORDS_PER_CARD}: `)
             tcpClient.write(`choose ${number}`)
             break
                 
@@ -119,6 +119,7 @@ tcpClient.on("data", (data) => {
             
         case "close":
             console.log("end")
+            tcpClient.write("close")
             tcpClient.end()
         }
     })
