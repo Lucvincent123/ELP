@@ -4,7 +4,7 @@ class Word {
         this.sameWords = [word]
     }
 
-    addSameWord(word) { // Word object
+    addSameWord(word) { // string
         this.sameWords.push(word)
     }
 

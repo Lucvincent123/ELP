@@ -14,6 +14,7 @@ const game = new Game(process.env.NUMBER_OF_PLAYERS)
 const pile = new Pile()
 
 
+
 // read file and return an array of Word objects
 const wordList = fs.readFileSync(process.env.DATA_PATH, "utf-8").split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
 // Take every n words to form a card

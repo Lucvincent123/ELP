@@ -29,6 +29,14 @@ class Card {
         })
         console.log("+============+")
     }
+
+    toString() {
+        var msg = ""
+        for (let i = 0; i < this.words.length; i++) {
+            msg += this.words[i].getValue() + ","
+        }
+        return msg.slice(0, msg.length - 1)
+    }
 }
 
 module.exports = Card

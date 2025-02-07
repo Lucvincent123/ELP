@@ -12,16 +12,6 @@ const Player = require("./classes/Player")
 
 const game = new Game(process.env.NUMBER_OF_PLAYERS)
 const pile = new Pile()
-// read card data from file
-// fs.readFile(process.env.FILE_PATH, "utf-8", (err, data) => {
-//     let numberOfWordPerCard = process.env.NUMBER_OF_WORDS_PER_CARD
-//     let wordList = data.split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1])) // array of word objects
-//     for (let i = 0; i < wordList.length / numberOfWordPerCard; i++) {
-//         let new_card = new Card(numberOfWordPerCard)
-//         new_card.updateCard(wordList.slice(i * 5, i * 5 + 5))
-//         game.addCard(new_card)
-//     }
-// })
 
 // read file and return an array of Word objects
 const wordList = fs.readFileSync(process.env.DATA_PATH, "utf-8").split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
@@ -37,96 +27,23 @@ playingPile.updateCards(pile.randomPick(process.env.NUMBER_OF_CARDS_PER_GAME))
 
 game.addPile(playingPile) // Add the playing pile to our game
 
-// readline.question(`Player number ${i+1} name: `, (name) => {
-//     const newPlayer = new Player()
-//     newPlayer.setName(name.trim())
-//     game.addPlayer(newPlayer)
-//     readline.close()
-// })
-
-// for (let i = 0; i < game.getNumberOfPlayers(); i++) {
-//     const newPlayer = new Player()
-//     newPlayer.setName(readline.question(`Player number ${i+1} name: `).trim()) // input player's name
-//     game.addPlayer(newPlayer)
-// }
-
-
-// while (! game.isNoMoreCardsLeft()) {
-//     game.nextPlayer()
-//     game.showTurn()
-//     console.log("Please pick one card")
-//     const pickedCard = playingPile.randomPick(1)[0]
-//     console.log("Card picked")
-//     pickedCard.show()
-//     console.log(`Now pick a number from 1 to ${pickedCard.numberOfWords}`)
-//     let wordIndex = Number(readline.question("").trim()) - 1
-//     var word = new Word(pickedCard.getWords()[wordIndex].getValue())
-//     // console.log(word)
-//     for (let i = 0; i < game.numberOfPlayers - 1; i++) {
-//         game.nextPlayer()
-//         game.showTurn()
-//         console.log(`The word to guess: ${word.value}`)
-//         console.log("Please write down the hint")
-//         game.getPlayerActive().easel = readline.question("").trim()
-//     }
-//     game.nextPlayer()
-//     game.showTurn()
-//     console.log("Here are the hints:")
-//     game.showHints()
-//     console.log("Write down your guess")
-//     console.log("If you don't want to guess, just tap PASS TURN")
-//     let guess = readline.question("").trim()
-//     if (guess == "PASS TURN") {
-//         continue
-//     }
-//     if (guess == word.value) {
-//         console.log("You have a good guess")
-//         console.log("You win one point")
-//         game.addPoints(1)
-//     } else {
-//         console.log("You have a wrong guess")
-//         console.log("You lost one another card")
-//         playingPile.randomPick(1)
-//     }
-//     console.log(`The correct answer is ${word.value}`)
-// }
-
-// game.showStatus()
-// playingPile.randomPick(1)[0]
-
-// console.log(game.players)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// function getPlayer() {
-//     return new Promise((resolve) => {
-//         const tcpServer = net.createServer((so))
-//     })
-// }
-
+// Global variables
 var connections = 0
 const sockets = []
+var hints = []
+var hint_string = ""
+var result = ""
+var picked = null
+var pickedWord = null
 
-
+// TCP
 const tcpServer = net.createServer((socket) => {
     connections += 1
+    // console.log(socket)
+    socket.write("hello")
     if (sockets.length < game.getNumberOfPlayers()) {
         sockets.push(socket)
         socket.on("data", (data) => {
-            console.log(data.toString())
             const cmd = data.toString().split(" ")
                 switch (cmd[0]) {
                     case "name":
@@ -134,19 +51,88 @@ const tcpServer = net.createServer((socket) => {
                         newPlayer.setName(cmd[1])
                         game.addPlayer(newPlayer)
                         if (connections == game.getNumberOfPlayers()) {
-                            game.nextPlayer()
                             console.log("We have enough players. Let's begin the game")
-                            sockets.forEach((socket) => {
-                                socket.write("start", "utf-8")
+                            game.nextPlayer()                 
+                            sockets.forEach((value, index) => {
+                                if (index == game.getPlayerActiveIndex()) {
+                                    value.write(`pick ${game.points} ${game.playingPile.getNumberOfCards()}`)
+                                } else {
+                                    value.write(`wait_pick ${game.getPlayerActive().getName()} ${game.points} ${game.playingPile.getNumberOfCards()}`)
+                                }
                             })
                         }
                         break
 
-                    case "ready":
-                        console.log("ready")
-                        // game.nextPlayer()
-                        console.log(game.getPlayerActiveIndex())
+                    case "pick":
+                        if (! game.isNoMoreCardsLeft()) {
+                            hints = []
+                            hint_string = ""
+                            console.log("pick")
+                            picked = playingPile.randomPick(1)[0]
+                            sockets.forEach((socket, index) => {
+                                if (index == game.getPlayerActiveIndex()) {
+                                    socket.write(`choose ${game.points} ${game.playingPile.getNumberOfCards()}`)
+                                } else {
+                                    socket.write(`wait_choose ${game.getPlayerActive().getName()} ${game.points} ${game.playingPile.getNumberOfCards()} ${picked.toString()}`)
+                                }
+                                // socket.write("start", "utf-8")
+                            })
+                        } else {
+                            sockets.forEach((socket, index) => {
+                                if (index == game.getPlayerActiveIndex()) {
+                                    socket.write("close")
+                                } else {
+                                    socket.write("close")
+                                }
+                            })
+                        }
+                        break
 
+                    case "choose":
+                        pickedWord = new Word(picked.getWords()[Number(cmd[1]) - 1].getValue())
+                        sockets.forEach((socket, index) => {
+                            if (index == game.getPlayerActiveIndex()) {
+                                socket.write(`wait_hint ${game.points} ${game.playingPile.getNumberOfCards()}`)
+                            } else {
+                                socket.write(`hint ${game.getPlayerActive().getName()} ${game.points} ${game.playingPile.getNumberOfCards()} ${pickedWord.getValue()}`)
+                            }
+                        })
+                        break
+
+                    case "hint":
+                        hints.push(cmd[1])
+                        hint_string += "," + cmd[1]
+                        if (hints.length == game.getNumberOfPlayers() - 1) {
+                            sockets.forEach((socket, index) => {
+                                if (index == game.getPlayerActiveIndex()) {
+                                    socket.write(`guess ${game.points} ${game.playingPile.getNumberOfCards()} ${hint_string}`)
+                                } else {
+                                    socket.write(`wait_guess ${game.getPlayerActive().getName()} ${game.points} ${game.playingPile.getNumberOfCards()} ${pickedWord.getValue()}`)
+                                }
+                            })
+                        }
+                        break
+
+                    case "guess":
+                        if (cmd[1] == "PASS TURN") {
+                            result = "pass"
+                        } else if (cmd[1] == pickedWord.getValue()) {
+                            game.addPoints(1)
+                            result = "right"
+                        } else {
+                            playingPile.randomPick(1)
+                            result = "wrong"
+                        }
+                        sockets.forEach((socket, index) => {
+                            if (index == game.getPlayerActiveIndex()) {
+                                socket.write(`result ${result} ${pickedWord.getValue()}`)
+                            } else {
+                                socket.write(`other_result ${game.getPlayerActive().getName()} ${result}`)
+                            }
+                        })
+
+                        game.nextPlayer()
+                        break
                 }
         })
     }
