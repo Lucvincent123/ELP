@@ -1,34 +1,32 @@
 class Pile {
     constructor() {
-        this.cards = new Array() // array of Card object
+        this.cards = new Array() // array of Card objects
     }
 
-    addCard(card) {
+    addCard(card) {   // card : Card object
         this.cards.push(card)
     }
 
-    pickCard(index) {
+    pickCard(index) {  // index : Int
         return this.cards.splice(index, 1)[0]
     }
 
-    randomPick(numberOfCards) {
+    randomPick(numberOfCards) { // numberOfCards : Int
         const picked = new Array()
         for (let i = 0; i < numberOfCards; i++) {
+            // Pick a random card from the pile
+            if (this.cards.length == 0) break
             picked.push(this.pickCard(Math.floor(Math.random() * this.cards.length)))
         }
         return picked
     }
 
-    updateCards(cardList) {
+    updateCards(cardList) {  // cardList : Array of Card objects
         this.cards = cardList
     }
 
-    isNoMoreCardsLeft() {
-        return this.cards.length <= 0
-    }
-
     getNumberOfCards() {
-        return this.cards.length
+        return this.cards.length  // Int
     }
 }
 

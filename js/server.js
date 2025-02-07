@@ -1,6 +1,6 @@
 require("dotenv").config()
 
-// const net = require("net")
+const net = require("net")
 const fs = require("fs")
 const readline = require("readline-sync")
 
@@ -22,18 +22,20 @@ const pile = new Pile()
 //         game.addCard(new_card)
 //     }
 // })
-const wordList = fs.readFileSync(process.env.FILE_PATH, "utf-8").split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
+
+// read file and return an array of Word objects
+const wordList = fs.readFileSync(process.env.DATA_PATH, "utf-8").split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
+// Take every n words to form a card
 for (let i = 0; i < wordList.length / process.env.NUMBER_OF_WORDS_PER_CARD; i++) {
-    const new_card = new Card(process.env.NUMBER_OF_WORDS_PER_CARD)
-    new_card.updateCard(wordList.slice(i * 5, i * 5 + 5))
-    pile.addCard(new_card)
+    const new_card = new Card(process.env.NUMBER_OF_WORDS_PER_CARD) // create a new card
+    new_card.updateCard(wordList.slice(i * 5, i * 5 + 5)) // Add words to card
+    pile.addCard(new_card) // Add card to main pile
 }
 // Pick a playing Pile
 const playingPile = new Pile()
 playingPile.updateCards(pile.randomPick(process.env.NUMBER_OF_CARDS_PER_GAME))
 
-game.addPile(playingPile)
-console.log(game.numberOfPlayers)
+game.addPile(playingPile) // Add the playing pile to our game
 
 // readline.question(`Player number ${i+1} name: `, (name) => {
 //     const newPlayer = new Player()
@@ -42,58 +44,54 @@ console.log(game.numberOfPlayers)
 //     readline.close()
 // })
 
-for (let i = 0; i < game.numberOfPlayers; i++) {
-    const newPlayer = new Player()
-    newPlayer.setName(readline.question(`Player number ${i+1} name: `).trim())
-    game.addPlayer(newPlayer)
-}
+// for (let i = 0; i < game.getNumberOfPlayers(); i++) {
+//     const newPlayer = new Player()
+//     newPlayer.setName(readline.question(`Player number ${i+1} name: `).trim()) // input player's name
+//     game.addPlayer(newPlayer)
+// }
 
 
-while (! game.isNoMoreCardsLeft()) {
-    game.nextPlayer()
-    console.log("#####################################################")
-    game.showStatus()
-    console.log(`${game.getPlayerActive().getName()}'s turn`)
-    console.log("Please pick one card")
-    const pickedCard = playingPile.randomPick(1)[0]
-    console.log("Card picked")
-    pickedCard.show()
-    console.log(`Now pick a number from 1 to ${pickedCard.numberOfWords}`)
-    let wordIndex = Number(readline.question("").trim()) - 1
-    var word = new Word(pickedCard.getWords()[wordIndex].getValue())
-    // console.log(word)
-    for (let i = 0; i < game.numberOfPlayers - 1; i++) {
-        game.nextPlayer()
-        console.log("#####################################################")
-        game.showStatus()
-        console.log(`The word to guess: ${word.value}`)
-        console.log(`${game.getPlayerActive().getName()}'s turn`)
-        console.log("Please write down the hint")
-        game.getPlayerActive().easel = readline.question("").trim()
-    }
-    game.nextPlayer()
-    console.log("#####################################################")
-    game.showStatus()
-    console.log(`${game.getPlayerActive().getName()}'s turn`)
-    console.log("Here are the hints:")
-    game.showHints()
-    console.log("Write down your guess")
-    console.log("If you don't want to guess, just tap PASS TURN")
-    let guess = readline.question("").trim()
-    if (guess == "PASS TURN") {
-        continue
-    }
-    if (guess == word.value) {
-        console.log("You have a good guess")
-        console.log("You win one point")
-        game.addPoints(1)
-    } else {
-        console.log("You have a wrong guess")
-        console.log("You lost one another card")
-        playingPile.randomPick(1)
-    }
-    console.log(`The correct answer is ${word.value}`)
-}
+// while (! game.isNoMoreCardsLeft()) {
+//     game.nextPlayer()
+//     game.showTurn()
+//     console.log("Please pick one card")
+//     const pickedCard = playingPile.randomPick(1)[0]
+//     console.log("Card picked")
+//     pickedCard.show()
+//     console.log(`Now pick a number from 1 to ${pickedCard.numberOfWords}`)
+//     let wordIndex = Number(readline.question("").trim()) - 1
+//     var word = new Word(pickedCard.getWords()[wordIndex].getValue())
+//     // console.log(word)
+//     for (let i = 0; i < game.numberOfPlayers - 1; i++) {
+//         game.nextPlayer()
+//         game.showTurn()
+//         console.log(`The word to guess: ${word.value}`)
+//         console.log("Please write down the hint")
+//         game.getPlayerActive().easel = readline.question("").trim()
+//     }
+//     game.nextPlayer()
+//     game.showTurn()
+//     console.log("Here are the hints:")
+//     game.showHints()
+//     console.log("Write down your guess")
+//     console.log("If you don't want to guess, just tap PASS TURN")
+//     let guess = readline.question("").trim()
+//     if (guess == "PASS TURN") {
+//         continue
+//     }
+//     if (guess == word.value) {
+//         console.log("You have a good guess")
+//         console.log("You win one point")
+//         game.addPoints(1)
+//     } else {
+//         console.log("You have a wrong guess")
+//         console.log("You lost one another card")
+//         playingPile.randomPick(1)
+//     }
+//     console.log(`The correct answer is ${word.value}`)
+// }
+
+// game.showStatus()
 // playingPile.randomPick(1)[0]
 
 // console.log(game.players)
@@ -119,29 +117,45 @@ while (! game.isNoMoreCardsLeft()) {
 //     })
 // }
 
-
-// const tcpServer = net.createServer((socket) => {
-//     if (! game.isFullPlayer()) {
-//         var newPlayer = new Player()
-//         game.addPlayer(newPlayer)
-//     } else {
-//         console.log("We have enough players")
-//         console.log("Let's begin")
-//     }
-
-//     socket.on("data", (data) => {
-//         let cmd = data.split(" ")
-//         switch(cmd[0]) {
-//             case "name":
-//                 newPlayer.setName(cmd[1])
-//                 break
-//         }
-//     })
-// })
+var connections = 0
+const sockets = []
 
 
+const tcpServer = net.createServer((socket) => {
+    connections += 1
+    if (sockets.length < game.getNumberOfPlayers()) {
+        sockets.push(socket)
+        socket.on("data", (data) => {
+            console.log(data.toString())
+            const cmd = data.toString().split(" ")
+                switch (cmd[0]) {
+                    case "name":
+                        const newPlayer = new Player()
+                        newPlayer.setName(cmd[1])
+                        game.addPlayer(newPlayer)
+                        if (connections == game.getNumberOfPlayers()) {
+                            game.nextPlayer()
+                            console.log("We have enough players. Let's begin the game")
+                            sockets.forEach((socket) => {
+                                socket.write("start", "utf-8")
+                            })
+                        }
+                        break
 
-// tcpServer.listen(process.env.PORT, process.env.HOST, () => {
-//     console.log(`Listening at http://${tcpServer.address().address}:${tcpServer.address().port}`)
-// })
+                    case "ready":
+                        console.log("ready")
+                        // game.nextPlayer()
+                        console.log(game.getPlayerActiveIndex())
+
+                }
+        })
+    }
+
+})
+
+
+
+tcpServer.listen(process.env.PORT, process.env.HOST, () => {
+    console.log(`Listening at http://${tcpServer.address().address}:${tcpServer.address().port}`)
+})
 

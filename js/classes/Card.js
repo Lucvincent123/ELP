@@ -1,10 +1,10 @@
 class Card {
     constructor(numberOfWords) {
-        this.numberOfWords = numberOfWords
-        this.words = new Array() //array of Word object
+        this.numberOfWords = numberOfWords // Int
+        this.words = new Array() // array of Word object
     }
     
-    addWord(word) {
+    addWord(word) { 
         if (this.words.length < this.numberOfWords) {
             this.words.push(word)
             return true
@@ -15,11 +15,11 @@ class Card {
     }
 
     updateCard(wordList) {
-        this.words = wordList
+        this.words = wordList // Word object
     }
 
     getWords() {
-        return this.words
+        return this.words // Array of Word object
     }
 
     show() {

@@ -2,10 +2,7 @@ require("dotenv").config()
 
 const net = require("net")
 
-const readline = require("readline").createInterface({
-    input: process.stdin,
-    output: process.stdout
-})
+const readline = require("readline-sync")
 
 const Player = require("./classes/Player")
 
@@ -14,18 +11,18 @@ const newPlayer = new Player()
 
 console.log(newPlayer.getName())
 
-readline.question("Please enter your name: ", (name) => {
-    newPlayer.setName(name.trim())
-    readline.close()
+newPlayer.setName(readline.question("Please enter your name: "))
+const tcpClient = new net.Socket()
+tcpClient.connect(process.env.PORT, process.env.HOST, () => {
+    console.log("You entered the game")
+    tcpClient.write(`name ${newPlayer.getName()}`)
 })
 
-const tcpClient = new net.Socket()
-// tcpClient.connect(process.env.PORT, process.env.HOST, () => {
-//     console.log("You entered the game")
-// })
-
-// tcpClient.on("data", (data) => {
-//     if (data == "name") {
-//         tcpClient.write(`name ${newPlayer.get}`)
-//     }
-// })
+tcpClient.on("data", (data) => {
+    let cmd = data.toString().split()
+    switch (cmd[0]) {
+        case "start":
+            console.log("start")
+            tcpClient.write("ready", "utf-8")
+    }
+})
