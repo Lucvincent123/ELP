@@ -14,7 +14,7 @@ const game = new Game(constants.NUMBER_OF_PLAYERS)
 const pile = new Pile()
 
 // read file and return an array of Word objects
-const wordList = fs.readFileSync(constants.DATA_PATH, "utf-8").split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
+const wordList = fs.readFileSync(constants.DATA_PATH, "utf-8").split("\n").slice(2).map((value) => new Word((value.split(" ")[1]).split("\r")[0]))
 // Take every n words to form a card
 for (let i = 0; i < wordList.length / constants.NUMBER_OF_WORDS_PER_CARD; i++) {
     const new_card = new Card(constants.NUMBER_OF_WORDS_PER_CARD) // create a new card
