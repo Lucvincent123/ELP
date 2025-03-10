@@ -1,5 +1,6 @@
 const fs = require("fs")
 const readline = require("readline")
+const { exec } = require("child_process");
 
 const Pile = require("./classes/Pile")
 const Card = require("./classes/Card")
@@ -35,8 +36,7 @@ function input(question) {
         });
 
         rl.question(question, answer => {
-            if (answer) resolve(answer)
-            else reject("invalid input")
+            resolve(answer)
             rl.close()
         })
     })
@@ -45,7 +45,7 @@ function input(question) {
 
 async function main(params) {
     const text = await textFile(constants.DATA_PATH)
-    const wordList = text.split("\r\n").slice(2).map((value) => new Word(value.split(" ")[1]))
+    const wordList = text.split("\n").slice(2).map((value) => new Word((value.split(" ")[1]).split("\r")[0]))
     const game = new Game(constants.NUMBER_OF_PLAYERS)
     const pile = new Pile()
     // Take every n words to form a card
@@ -111,13 +111,16 @@ async function main(params) {
     game.showStatus()
 
 
-    // const name = await input("what is your name?")
-    // console.log(name)
-    // const age = await input("what is your age?")
-    // console.log(age)
+    game.log("JUST ONE")
+    fs.writeFile(constants.RECORD_PATH, game.getRecord(), () => {
+        console.log("Record save")
+    })
+    
 }
 
 main()
+
+
 
 
 
